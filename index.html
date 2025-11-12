@@ -162,7 +162,6 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
             <div class="muted" id="absSince">—</div>
           </div>
 
-          <!-- Water card sits as a separate sibling in the grid -->
           <div class="card center">
             <h2>Water Intake</h2>
             <div class="big" id="waterOz">0 / 126 oz</div>
@@ -225,7 +224,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
         </div>
       </div>
 
-      <!-- QUICK CAPTURE (BRAIN DUMP) -->
+      <!-- QUICK CAPTURE -->
       <div class="view" data-view="quick" hidden>
         <div class="card">
           <h2>Brain Dump</h2>
@@ -286,6 +285,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
       <!-- WITCHCRAFT -->
       <div class="view" data-view="witch" hidden>
         <div class="grid">
+          <!-- Book of Shadows -->
           <div class="card">
             <h2>Book of Shadows</h2>
             <div class="row">
@@ -302,6 +302,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
             <div id="bosList" class="list"></div>
           </div>
 
+          <!-- Moon • Tarot • Sabbats -->
           <div class="card">
             <h2>Moon • Tarot • Sabbats</h2>
 
@@ -310,7 +311,7 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
               <div class="muted" id="moonExplain">—</div>
             </div>
 
-            <!-- Manual Tarot Draw (no random pull) -->
+            <!-- Manual Tarot Draw -->
             <div class="item">
               <div class="flex-between">
                 <strong>Manual Draw</strong>
@@ -348,50 +349,40 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
 </div>
 
 <script>
-/* helper utils identical to the original feel */
+/* ========= SAFETY & HELPERS (works in Notion) ========= */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-/* SAFE STORAGE (works in Notion iframes, falls back to memory) */
+
+/* Safe storage: fallback to memory if localStorage is blocked */
 let _storage = (() => {
   try {
-    const t="__test";
-    localStorage.setItem(t, "1");
-    localStorage.removeItem(t);
-    return localStorage; // ok to use real localStorage
-  } catch {
-    const mem = {};
-    return {
-      getItem: k => (k in mem ? mem[k] : null),
-      setItem: (k,v) => { mem[k] = String(v); },
-      removeItem: k => { delete mem[k]; }
-    };
-  }
-})();
-const store = (k,v)=>_storage.setItem(k, JSON.stringify(v));
-const read  = (k,d=null)=>{ try{ return JSON.parse(_storage.getItem(k)) ?? d }catch{ return d } };
-/* SAFE STORAGE (works in Notion iframes, falls back to memory) */
-let _storage = (() => {
-  try {
-    const t="__test";
-    localStorage.setItem(t, "1");
-    localStorage.removeItem(t);
+    const t="__test"; localStorage.setItem(t,"1"); localStorage.removeItem(t);
     return localStorage;
-  } catch {
-    const mem = {};
-    return {
-      getItem: k => (k in mem ? mem[k] : null),
-      setItem: (k,v) => { mem[k] = String(v); },
-      removeItem: k => { delete mem[k]; }
+  } catch { // Notion sandbox or block
+    const mem={}; return {
+      getItem:k => (k in mem? mem[k]:null),
+      setItem:(k,v)=>{ mem[k]=String(v); },
+      removeItem:k=>{ delete mem[k]; }
     };
   }
 })();
 const store = (k,v)=>_storage.setItem(k, JSON.stringify(v));
 const read  = (k,d=null)=>{ try{ return JSON.parse(_storage.getItem(k)) ?? d }catch{ return d } };
 
-/* TOAST HELPER — tiny pop*
+/* Tiny toast for feedback (no alert/confirm) */
+function toast(msg){
+  let t = $("#toast");
+  if(!t){
+    t = document.createElement("div");
+    t.id="toast";
+    t.style.cssText="position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;z-index:9999;backdrop-filter:blur(4px);transition:opacity .2s;opacity:0";
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity="1";
+  clearTimeout(t._hide); t._hide=setTimeout(()=>{t.style.opacity="0"},1500);
+}
 
-
-// Tabs
+/* ========= TABS ========= */
 const views = $$(".view");
 $$(".tab").forEach(btn=>{
   btn.addEventListener("click", ()=>{
@@ -402,7 +393,7 @@ $$(".tab").forEach(btn=>{
   });
 });
 
-// CLOCK
+/* ========= CLOCK ========= */
 const timeEl=$("#time"), dateEl=$("#date"), fmtSel=$("#fmt"), locInput=$("#locale");
 fmtSel.value = read("fmt","12");
 locInput.value = read("loc","en-US");
@@ -415,10 +406,10 @@ function tick(){
 setInterval(tick, 250); tick();
 fmtSel.addEventListener("change", ()=>store("fmt", fmtSel.value));
 locInput.addEventListener("change", ()=>store("loc", locInput.value));
-$("#saveNote").addEventListener("click", ()=>{ store("note", $("#note").value); $("#noteSaved").textContent="Saved."; setTimeout(()=>$("#noteSaved").textContent="",1500); });
+$("#saveNote").addEventListener("click", ()=>{ store("note", $("#note").value); $("#noteSaved").textContent="Saved ✓"; setTimeout(()=>$("#noteSaved").textContent="",1500); });
 $("#note").value = read("note","");
 
-// AFFIRM
+/* ========= AFFIRM ========= */
 const defaultsAff=[
   "I am disciplined, glowing, and guided.",
   "Money, love, and opportunities flow to me.",
@@ -432,19 +423,19 @@ $("#setAffirm").addEventListener("click", ()=> setAffirm($("#customAffirm").valu
 $("#randomAffirm").addEventListener("click", ()=> setAffirm(defaultsAff[Math.floor(Math.random()*defaultsAff.length)]));
 setAffirm(read("affirm", affEl.textContent));
 
-// MOOD
+/* ========= MOOD ========= */
 const moodDisplay=$("#moodDisplay");
 const todayKey="mood-"+new Date().toISOString().slice(0,10);
 function setMood(label){ store(todayKey,label); moodDisplay.textContent = label; }
 moodDisplay.textContent = read(todayKey,"—");
 $$(".view[data-view='mood'] button[data-mood]").forEach(b=> b.addEventListener("click", ()=> setMood(b.dataset.mood)));
 
-// STREAKS
+/* ========= STREAKS & WATER ========= */
 const streakKey="workout-streak", absStartKey="abs-start";
 const streakCount=$("#streakCount");
 function renderStreak(){ const n=read(streakKey,0); streakCount.textContent = n+" day"+(n==1?"":"s"); }
-$("#streakInc").addEventListener("click", ()=>{ store(streakKey, (read(streakKey,0)+1)); renderStreak(); });
-$("#streakReset").addEventListener("click", ()=>{ store(streakKey, 0); renderStreak(); });
+$("#streakInc").addEventListener("click", ()=>{ store(streakKey, (read(streakKey,0)+1)); renderStreak(); toast("Streak +1 ✓"); });
+$("#streakReset").addEventListener("click", ()=>{ store(streakKey, 0); renderStreak(); toast("Streak reset"); });
 renderStreak();
 
 const absCount=$("#absCount"), absSince=$("#absSince");
@@ -457,19 +448,14 @@ function renderAbs(){
 }
 const absInput = $("#absStartDate");
 $("#absSave").addEventListener("click", () => {
-  if (absInput.value) {
-    store(absStartKey, absInput.value);
-    renderAbs();
-  }
+  if (absInput.value) { store(absStartKey, absInput.value); renderAbs(); toast("Start date saved ✓"); }
 });
 $("#absReset").addEventListener("click", () => {
-  localStorage.removeItem(absStartKey);
-  absInput.value = "";
-  renderAbs();
+  _storage.removeItem(absStartKey); absInput.value = ""; renderAbs(); toast("Abstinence reset");
 });
 renderAbs();
 
-// WATER (42 oz Stanley; goal 3 × 42 = 126 oz)
+/* Water: 42 oz increments to 126 oz goal */
 const waterKey = "waterOz";
 function renderWater() {
   const oz = read(waterKey, 0);
@@ -479,16 +465,14 @@ function renderWater() {
 }
 $("#waterAdd").addEventListener("click", () => {
   const oz = Math.min(126, read(waterKey, 0) + 42);
-  store(waterKey, oz);
-  renderWater();
+  store(waterKey, oz); renderWater(); toast("+1 Stanley ✓");
 });
 $("#waterReset").addEventListener("click", () => {
-  store(waterKey, 0);
-  renderWater();
+  store(waterKey, 0); renderWater(); toast("Water reset");
 });
 renderWater();
 
-// COUNTDOWN
+/* ========= COUNTDOWN ========= */
 const cdTitle=$("#cdTitle"), cdDate=$("#cdDate"), cdTicker=$("#cdTicker"), cdLabel=$("#cdLabel");
 function renderCountdown(){
   const t=read("cdTitle","30th Birthday ✨"), d=read("cdDate",null);
@@ -502,16 +486,15 @@ function renderCountdown(){
   cdTicker.textContent=`${days}d ${hours}h ${mins}m`;
   cdLabel.textContent = t+" • "+ new Date(d).toLocaleDateString();
 }
-$("#cdSave").addEventListener("click", ()=>{ store("cdTitle", cdTitle.value||"Countdown"); if(cdDate.value) store("cdDate", cdDate.value); renderCountdown(); });
+$("#cdSave").addEventListener("click", ()=>{ store("cdTitle", cdTitle.value||"Countdown"); if(cdDate.value) store("cdDate", cdDate.value); renderCountdown(); toast("Countdown saved ✓"); });
 renderCountdown(); setInterval(renderCountdown, 30000);
 
-// POMODORO
+/* ========= POMODORO ========= */
 const pomoClock=$("#pomoClock"), pomoMode=$("#pomoMode");
 let pomoTimer=null, remaining=read("pomoRemaining", 25*60);
 function fmt(t){ const m=String(Math.floor(t/60)).padStart(2,"0"), s=String(t%60).padStart(2,"0"); return `${m}:${s}`; }
 function drawPomo(){ pomoClock.textContent=fmt(remaining); }
-function startPomo(){ if(pomoTimer) return; pomoTimer=setInterval(()=>{ remaining=Math.max(0,remaining-1); store("pomoRemaining",remaining); drawPomo(); if(remaining===0){ clearInterval(pomoTimer); pomoTimer=null; toast("Focus block complete!"); }
-},1000); }
+function startPomo(){ if(pomoTimer) return; pomoTimer=setInterval(()=>{ remaining=Math.max(0,remaining-1); store("pomoRemaining",remaining); drawPomo(); if(remaining===0){ clearInterval(pomoTimer); pomoTimer=null; toast("Focus block complete!"); }},1000); }
 function pausePomo(){ if(!pomoTimer) return; clearInterval(pomoTimer); pomoTimer=null; }
 function resetPomo(){ pausePomo(); remaining=Number(pomoMode.value)*60; store("pomoRemaining",remaining); drawPomo(); }
 $("#pomoStart").addEventListener("click", startPomo);
@@ -520,46 +503,47 @@ $("#pomoReset").addEventListener("click", resetPomo);
 pomoMode.addEventListener("change", resetPomo);
 drawPomo();
 $("#pomoTask").value = read("pomoTask",""); $("#pomoTaskLabel").textContent = read("pomoTask","(no task set)");
-$("#pomoSaveTask").addEventListener("click", ()=>{ store("pomoTask", $("#pomoTask").value); $("#pomoTaskLabel").textContent=$("#pomoTask").value || "(no task set)"; });
+$("#pomoSaveTask").addEventListener("click", ()=>{ store("pomoTask", $("#pomoTask").value); $("#pomoTaskLabel").textContent=$("#pomoTask").value || "(no task set)"; toast("Task saved ✓"); });
 
-// QUICK CAPTURE
+/* ========= QUICK CAPTURE ========= */
 const qcKey="quickCaptures";
 function getQC(){ return read(qcKey,[]); }
 function setQC(a){ store(qcKey,a); renderQC(); }
 function renderQC(){
-  const list=$("#qcList"); list.innerHTML="";
-  const items=getQC().slice(-5).reverse(); // last 5
-  items.forEach((it,idx)=>{
+  const list=$("#qcList"); if(!list) return; list.innerHTML="";
+  const items=getQC().slice(-5).reverse();
+  items.forEach(it=>{
     const d=document.createElement("div"); d.className="item";
     d.innerHTML = `<h3>${it.tag} • <span class="small">${new Date(it.ts).toLocaleString()}</span></h3><div class="small">${it.text}</div>`;
     list.appendChild(d);
   });
 }
 $("#qcSave").addEventListener("click", ()=>{
-  const txt=$("#qcText").value.trim(); if(!txt) return;
+  const txt=$("#qcText").value.trim(); if(!txt){ toast("Type something first"); return; }
   const tag=$("#qcTag").value;
   const a=getQC(); a.push({ts:Date.now(), tag, text:txt});
-  setQC(a); $("#qcText").value="";
+  setQC(a); $("#qcText").value=""; toast("Captured ✓");
 });
-$("#qcClear").addEventListener("click", ()=>{ if(confirm("Clear all brain dump entries?")) setQC([]); });
+$("#qcClear").addEventListener("click", ()=>{ setQC([]); toast("Cleared ✓"); });
 renderQC();
 
-// DIARY
+/* ========= DIARY ========= */
 const dKeyBase="diary-";
 function dKey(dstr){ return dKeyBase+dstr; }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 $("#dDate").value = todayStr();
-function loadDiary(){ const k=dKey($("#dDate").value); $("#dText").value = read(k,""); }
-function saveDiary(){ const k=dKey($("#dDate").value); store(k, $("#dText").value); alert("Saved."); }
+function loadDiary(){ const k=dKey($("#dDate").value); $("#dText").value = read(k,""); toast("Loaded ✓"); }
+function saveDiary(){ const k=dKey($("#dDate").value); store(k, $("#dText").value); toast("Saved ✓"); }
 $("#dLoad").addEventListener("click", loadDiary);
 $("#dSave").addEventListener("click", saveDiary);
 loadDiary();
-// POETRY — drafts list + save
+
+/* ========= POETRY ========= */
 const pKey="poems";
 function getPoems(){ return read(pKey,[]); }
 function setPoems(v){ store(pKey,v); renderPoems(); }
 function renderPoems(){
-  const list=document.getElementById("pList"); if(!list) return;
+  const list=$("#pList"); if(!list) return;
   list.innerHTML="";
   getPoems().slice().reverse().forEach(p=>{
     const div=document.createElement("div"); div.className="item";
@@ -569,66 +553,23 @@ function renderPoems(){
     list.appendChild(div);
   });
 }
-document.getElementById("pSave")?.addEventListener("click", ()=>{
-  const title=document.getElementById("pTitle").value.trim()||"Untitled";
-  const body=document.getElementById("pBody").value.trim();
-  if(!body){ toast("Write a few lines first ✍️"); return; }
-  const vibe=document.getElementById("pVibe").value;
+$("#pSave").addEventListener("click", ()=>{
+  const title=$("#pTitle").value.trim()||"Untitled";
+  const body=$("#pBody").value.trim(); if(!body){ toast("Write a few lines first ✍️"); return; }
+  const vibe=$("#pVibe").value;
   const arr=getPoems(); arr.push({ts:Date.now(), title, body, vibe}); setPoems(arr);
-  document.getElementById("pTitle").value="";
-  document.getElementById("pBody").value="";
+  $("#pTitle").value=""; $("#pBody").value="";
   toast("Poem saved ✓");
 });
 renderPoems();
-// WITCHCRAFT — Book of Shadows (BOS)
-const bosKey="bosEntries";
-function getBOS(){ return read(bosKey,[]); }
-function setBOS(v){ store(bosKey,v); renderBOS(); }
-function renderBOS(){
-  const list=document.getElementById("bosList"); if(!list) return;
-  list.innerHTML="";
-  getBOS().slice().reverse().forEach(en=>{
-    const el=document.createElement("div"); el.className="item";
-    el.innerHTML = `<h3>${en.title} <span class="badge">${en.cat}</span></h3>
-                    <div class="small">${new Date(en.ts).toLocaleString()}</div>
-                    <hr><div class="small" style="white-space:pre-wrap">${en.body}</div>`;
-    list.appendChild(el);
-  });
-}
-document.getElementById("bosAdd")?.addEventListener("click", ()=>{
-  const t=document.getElementById("bosTitle").value.trim()||"Untitled";
-  const c=document.getElementById("bosCat").value;
-  const b=document.getElementById("bosBody").value.trim();
-  if(!b){ toast("Add some notes 🕯️"); return; }
-  const arr=getBOS(); arr.push({ts:Date.now(), title:t, cat:c, body:b}); setBOS(arr);
-  document.getElementById("bosTitle").value="";
-  document.getElementById("bosBody").value="";
-  toast("Entry added ✓");
-});
-(function(){
-  const btn=document.getElementById("bosClearAll"); if(!btn) return;
-  let pending=false, timer=null, original=btn.textContent;
-  btn.addEventListener("click", ()=>{
-    if(!pending){
-      pending=true; btn.textContent="Click again to confirm";
-      clearTimeout(timer);
-      timer=setTimeout(()=>{ pending=false; btn.textContent=original; },3000);
-    }else{
-      pending=false; btn.textContent=original;
-      setBOS([]); toast("Book of Shadows cleared ✓");
-    }
-  });
-})();
-renderBOS();
 
-// WITCHCRAFT — Moon Phase (approximation)
+/* ========= WITCHCRAFT: Moon Phase ========= */
 function moonPhase(date=new Date()){
   const year=date.getUTCFullYear(), month=date.getUTCMonth()+1, day=date.getUTCDate();
   let r = year%100; r%=19; if (r>9) r-=19;
-  r = ((r*11)%30)+month+day;
-  if(month<3) r+=2;
+  r = ((r*11)%30)+month+day; if(month<3) r+=2;
   const res = r-8.3; const age=((res+30)%30);
-  return age; // 0 new, ~15 full
+  return age;
 }
 function phaseName(age){
   if(age<1.0) return "New Moon 🌑";
@@ -647,9 +588,8 @@ function phaseName(age){
   $("#moonExplain").textContent = `Lunar age ≈ ${age.toFixed(1)} days. Good for tuning rituals to the phase.`;
 })();
 
-// TAROT — Manual Draw only (full 78-card deck)
+/* ========= WITCHCRAFT: Manual Tarot (78) ========= */
 const tarotDeck = [
-  // Major Arcana
   ["0 The Fool","Beginnings, leap of faith, openness"],
   ["I The Magician","Willpower, manifestation, tools within reach"],
   ["II The High Priestess","Intuition, inner knowing, mystery"],
@@ -672,7 +612,6 @@ const tarotDeck = [
   ["XIX The Sun","Vitality, joy, clarity"],
   ["XX Judgement","Awakening, reckoning, call to action"],
   ["XXI The World","Completion, wholeness, integration"],
-  // Wands (A–10)
   ["Ace of Wands","Inspiration, new passion, creative spark"],
   ["Two of Wands","Planning, future vision, possibilities"],
   ["Three of Wands","Expansion, momentum, looking ahead"],
@@ -683,7 +622,6 @@ const tarotDeck = [
   ["Eight of Wands","Movement, speed, progress"],
   ["Nine of Wands","Resilience, persistence, last stand"],
   ["Ten of Wands","Burden, responsibility, stress"],
-  // Cups (A–10)
   ["Ace of Cups","New emotions, love, intuition opening"],
   ["Two of Cups","Partnership, harmony, attraction"],
   ["Three of Cups","Friendship, celebration, joy"],
@@ -694,7 +632,6 @@ const tarotDeck = [
   ["Eight of Cups","Walking away, spiritual journey"],
   ["Nine of Cups","Satisfaction, wish fulfilled"],
   ["Ten of Cups","Harmony, family, emotional completion"],
-  // Swords (A–10)
   ["Ace of Swords","Clarity, truth, breakthrough"],
   ["Two of Swords","Indecision, stalemate, choices"],
   ["Three of Swords","Heartbreak, sorrow, release"],
@@ -705,7 +642,6 @@ const tarotDeck = [
   ["Eight of Swords","Restriction, trapped thoughts"],
   ["Nine of Swords","Anxiety, worry, nightmares"],
   ["Ten of Swords","Endings, collapse, renewal"],
-  // Pentacles (A–10)
   ["Ace of Pentacles","New opportunity, prosperity, foundation"],
   ["Two of Pentacles","Balance, juggling priorities"],
   ["Three of Pentacles","Collaboration, teamwork, learning"],
@@ -716,113 +652,73 @@ const tarotDeck = [
   ["Eight of Pentacles","Skill, mastery, dedication"],
   ["Nine of Pentacles","Self-sufficiency, abundance, refinement"],
   ["Ten of Pentacles","Legacy, stability, family wealth"],
-  // Courts – Wands
   ["Page of Wands","Curiosity, exploration, enthusiasm"],
   ["Knight of Wands","Adventure, passion, impulsiveness"],
   ["Queen of Wands","Confidence, independence, charisma"],
   ["King of Wands","Leadership, vision, bold action"],
-  // Courts – Cups
   ["Page of Cups","Creativity, messages, intuition"],
   ["Knight of Cups","Romance, charm, pursuit of dreams"],
   ["Queen of Cups","Compassion, empathy, emotional depth"],
   ["King of Cups","Balance, diplomacy, emotional mastery"],
-  // Courts – Swords
   ["Page of Swords","Ideas, curiosity, vigilance"],
   ["Knight of Swords","Ambition, haste, decisive action"],
   ["Queen of Swords","Truth, perception, independence"],
   ["King of Swords","Logic, authority, clear thinking"],
-  // Courts – Pentacles
   ["Page of Pentacles","Study, new job, manifestation"],
   ["Knight of Pentacles","Hard work, reliability, routine"],
   ["Queen of Pentacles","Nurture, practicality, abundance"],
   ["King of Pentacles","Success, stability, discipline"]
 ];
-
-// Build dropdown options
 (function initTarotSelect(){
-  const sel = document.getElementById("tarotSelect");
-  if(!sel) return;
+  const sel = $("#tarotSelect"); if(!sel) return;
   tarotDeck.forEach(([name])=>{
-    const o = document.createElement("option");
-    o.value = name; o.textContent = name;
-    sel.appendChild(o);
+    const o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o);
   });
 })();
-
-// Lookup helper
-function tarotMeaningByName(name){
-  const found = tarotDeck.find(([n])=> n===name);
-  return found ? found[1] : "—";
-}
-
-// Manual draw display + log
-const selEl = document.getElementById("tarotSelect");
-const revEl = document.getElementById("tarotReversed");
-const manualTitle = document.getElementById("tarotManualTitle");
-const manualMeaning = document.getElementById("tarotManualMeaning");
-
+function tarotMeaningByName(name){ const f=tarotDeck.find(([n])=>n===name); return f? f[1] : "—"; }
+const selEl=$("#tarotSelect"), revEl=$("#tarotReversed");
+const manualTitle=$("#tarotManualTitle"), manualMeaning=$("#tarotManualMeaning");
 function renderManualMeaning(){
   if(!selEl) return;
-  const name = selEl.value;
-  const reversed = revEl?.checked;
-  manualTitle.textContent = reversed ? `${name} (Reversed)` : name;
+  const name=selEl.value, reversed=!!(revEl&&revEl.checked);
+  manualTitle.textContent = reversed? `${name} (Reversed)` : name;
   manualMeaning.textContent = tarotMeaningByName(name);
 }
 selEl?.addEventListener("change", renderManualMeaning);
 revEl?.addEventListener("change", renderManualMeaning);
 renderManualMeaning();
 
-const tarotLogKey = "tarotLog";
-function getTarotLog(){ return read(tarotLogKey, []); }
-function setTarotLog(v){ store(tarotLogKey, v); renderTarotLog(); }
+const tarotLogKey="tarotLog";
+function getTarotLog(){ return read(tarotLogKey,[]); }
+function setTarotLog(v){ store(tarotLogKey,v); renderTarotLog(); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
-
 function renderTarotLog(){
-  const el = document.getElementById("tarotLog"); if(!el) return;
-  el.innerHTML = "";
+  const el=$("#tarotLog"); if(!el) return; el.innerHTML="";
   getTarotLog().slice(-7).reverse().forEach(entry=>{
-    const div = document.createElement("div"); div.className="item";
-    const title = entry.reversed ? `${entry.card} (Reversed)` : entry.card;
-    div.innerHTML = `<h3>${title}</h3>
-      <div class="small">${entry.date}</div>
-      <div class="small">${tarotMeaningByName(entry.card)}</div>`;
-    el.appendChild(div);
+    const d=document.createElement("div"); d.className="item";
+    const title = entry.reversed? `${entry.card} (Reversed)` : entry.card;
+    d.innerHTML = `<h3>${title}</h3><div class="small">${entry.date}</div><div class="small">${tarotMeaningByName(entry.card)}</div>`;
+    el.appendChild(d);
   });
 }
-
-document.getElementById("tarotSave")?.addEventListener("click", ()=>{
-  const entry = {
-    date: todayISO(),
-    card: selEl.value,
-    reversed: !!revEl.checked
-  };
-  const log = getTarotLog();
-  const i = log.findIndex(e=> e.date === entry.date);
-  if(i>=0) log[i] = entry; else log.push(entry);
-  setTarotLog(log);
-  alert("Saved today’s card.");
+$("#tarotSave")?.addEventListener("click", ()=>{
+  const entry={ date: todayISO(), card: selEl.value, reversed: !!(revEl&&revEl.checked) };
+  const log=getTarotLog(); const i=log.findIndex(e=>e.date===entry.date);
+  if(i>=0) log[i]=entry; else log.push(entry);
+  setTarotLog(log); toast("Tarot saved ✓");
 });
-const tarotClearBtn = document.getElementById("tarotClear");
-if(tarotClearBtn){
-  let pending = false, timer = null, original = tarotClearBtn.textContent;
-  tarotClearBtn.addEventListener("click", ()=>{
-    if(!pending){
-      pending = true;
-      tarotClearBtn.textContent = "Click again to confirm";
-      clearTimeout(timer);
-      timer = setTimeout(()=>{ pending=false; tarotClearBtn.textContent = original; }, 3000);
-    }else{
-      pending = false;
-      tarotClearBtn.textContent = original;
-      setTarotLog([]);
-      toast("Tarot log cleared ✓");
-    }
+(function(){
+  const btn=$("#tarotClear"); if(!btn) return;
+  let pending=false, timer=null, original=btn.textContent;
+  btn.addEventListener("click", ()=>{
+    if(!pending){ pending=true; btn.textContent="Click again to confirm";
+      clearTimeout(timer); timer=setTimeout(()=>{ pending=false; btn.textContent=original; },3000);
+    }else{ pending=false; btn.textContent=original; setTarotLog([]); toast("Tarot log cleared ✓"); }
   });
-}
-
+})();
 renderTarotLog();
 
-// WITCHCRAFT — Sabbats (Northern Hemisphere, fixed dates)
+/* ========= WITCHCRAFT: Sabbats ========= */
 const sabbats=[
   ["Yule (Winter Solstice)", 12, 21],
   ["Imbolc", 2, 1],
@@ -834,21 +730,18 @@ const sabbats=[
   ["Samhain", 10, 31]
 ];
 function nextSabbat(){
-  const now=new Date();
-  const year=now.getFullYear();
-  const candidates = sabbats.map(([n,m,d])=>{
-    let dt=new Date(year,m-1,d);
-    if(dt<now) dt=new Date(year+1,m-1,d);
-    return {name:n, date:dt};
-  }).sort((a,b)=>a.date-b.date);
-  return candidates[0];
+  const now=new Date(), year=now.getFullYear();
+  const c=sabbats.map(([n,m,d])=>{ let dt=new Date(year,m-1,d); if(dt<now) dt=new Date(year+1,m-1,d); return {name:n,date:dt}; })
+                 .sort((a,b)=>a.date-b.date);
+  return c[0];
 }
 (function renderSabbat(){
   const nxt=nextSabbat();
-  const diff = Math.ceil((nxt.date - new Date())/(1000*60*60*24));
-  $("#sabbatBadge").textContent = `${nxt.name}`;
+  const diff=Math.ceil((nxt.date - new Date())/(1000*60*60*24));
+  $("#sabbatBadge").textContent = nxt.name;
   $("#sabbatExplain").textContent = `${diff} day(s) until ${nxt.name} • ${nxt.date.toLocaleDateString()}`;
 })();
 </script>
 </body>
 </html>
+
