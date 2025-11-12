@@ -351,8 +351,45 @@ hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
 /* helper utils identical to the original feel */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-const store = (k,v)=>localStorage.setItem(k, JSON.stringify(v));
-const read  = (k,d=null)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } };
+/* SAFE STORAGE (works in Notion iframes, falls back to memory) */
+let _storage = (() => {
+  try {
+    const t="__test";
+    localStorage.setItem(t, "1");
+    localStorage.removeItem(t);
+    return localStorage; // ok to use real localStorage
+  } catch {
+    const mem = {};
+    return {
+      getItem: k => (k in mem ? mem[k] : null),
+      setItem: (k,v) => { mem[k] = String(v); },
+      removeItem: k => { delete mem[k]; }
+    };
+  }
+})();
+const store = (k,v)=>_storage.setItem(k, JSON.stringify(v));
+const read  = (k,d=null)=>{ try{ return JSON.parse(_storage.getItem(k)) ?? d }catch{ return d } };
+/* SAFE STORAGE (works in Notion iframes, falls back to memory) */
+let _storage = (() => {
+  try {
+    const t="__test";
+    localStorage.setItem(t, "1");
+    localStorage.removeItem(t);
+    return localStorage;
+  } catch {
+    const mem = {};
+    return {
+      getItem: k => (k in mem ? mem[k] : null),
+      setItem: (k,v) => { mem[k] = String(v); },
+      removeItem: k => { delete mem[k]; }
+    };
+  }
+})();
+const store = (k,v)=>_storage.setItem(k, JSON.stringify(v));
+const read  = (k,d=null)=>{ try{ return JSON.parse(_storage.getItem(k)) ?? d }catch{ return d } };
+
+/* TOAST HELPER — tiny pop*
+
 
 // Tabs
 const views = $$(".view");
