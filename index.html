@@ -510,7 +510,8 @@ const pomoClock=$("#pomoClock"), pomoMode=$("#pomoMode");
 let pomoTimer=null, remaining=read("pomoRemaining", 25*60);
 function fmt(t){ const m=String(Math.floor(t/60)).padStart(2,"0"), s=String(t%60).padStart(2,"0"); return `${m}:${s}`; }
 function drawPomo(){ pomoClock.textContent=fmt(remaining); }
-function startPomo(){ if(pomoTimer) return; pomoTimer=setInterval(()=>{ remaining=Math.max(0,remaining-1); store("pomoRemaining",remaining); drawPomo(); if(remaining===0){ clearInterval(pomoTimer); pomoTimer=null; alert("Focus block complete!"); }},1000); }
+function startPomo(){ if(pomoTimer) return; pomoTimer=setInterval(()=>{ remaining=Math.max(0,remaining-1); store("pomoRemaining",remaining); drawPomo(); if(remaining===0){ clearInterval(pomoTimer); pomoTimer=null; toast("Focus block complete!"); }
+},1000); }
 function pausePomo(){ if(!pomoTimer) return; clearInterval(pomoTimer); pomoTimer=null; }
 function resetPomo(){ pausePomo(); remaining=Number(pomoMode.value)*60; store("pomoRemaining",remaining); drawPomo(); }
 $("#pomoStart").addEventListener("click", startPomo);
@@ -553,6 +554,72 @@ function saveDiary(){ const k=dKey($("#dDate").value); store(k, $("#dText").valu
 $("#dLoad").addEventListener("click", loadDiary);
 $("#dSave").addEventListener("click", saveDiary);
 loadDiary();
+// POETRY — drafts list + save
+const pKey="poems";
+function getPoems(){ return read(pKey,[]); }
+function setPoems(v){ store(pKey,v); renderPoems(); }
+function renderPoems(){
+  const list=document.getElementById("pList"); if(!list) return;
+  list.innerHTML="";
+  getPoems().slice().reverse().forEach(p=>{
+    const div=document.createElement("div"); div.className="item";
+    div.innerHTML = `<h3>${p.title} <span class="badge">${p.vibe}</span></h3>
+                     <div class="small">${new Date(p.ts).toLocaleString()}</div>
+                     <hr><div class="small" style="white-space:pre-wrap">${p.body}</div>`;
+    list.appendChild(div);
+  });
+}
+document.getElementById("pSave")?.addEventListener("click", ()=>{
+  const title=document.getElementById("pTitle").value.trim()||"Untitled";
+  const body=document.getElementById("pBody").value.trim();
+  if(!body){ toast("Write a few lines first ✍️"); return; }
+  const vibe=document.getElementById("pVibe").value;
+  const arr=getPoems(); arr.push({ts:Date.now(), title, body, vibe}); setPoems(arr);
+  document.getElementById("pTitle").value="";
+  document.getElementById("pBody").value="";
+  toast("Poem saved ✓");
+});
+renderPoems();
+// WITCHCRAFT — Book of Shadows (BOS)
+const bosKey="bosEntries";
+function getBOS(){ return read(bosKey,[]); }
+function setBOS(v){ store(bosKey,v); renderBOS(); }
+function renderBOS(){
+  const list=document.getElementById("bosList"); if(!list) return;
+  list.innerHTML="";
+  getBOS().slice().reverse().forEach(en=>{
+    const el=document.createElement("div"); el.className="item";
+    el.innerHTML = `<h3>${en.title} <span class="badge">${en.cat}</span></h3>
+                    <div class="small">${new Date(en.ts).toLocaleString()}</div>
+                    <hr><div class="small" style="white-space:pre-wrap">${en.body}</div>`;
+    list.appendChild(el);
+  });
+}
+document.getElementById("bosAdd")?.addEventListener("click", ()=>{
+  const t=document.getElementById("bosTitle").value.trim()||"Untitled";
+  const c=document.getElementById("bosCat").value;
+  const b=document.getElementById("bosBody").value.trim();
+  if(!b){ toast("Add some notes 🕯️"); return; }
+  const arr=getBOS(); arr.push({ts:Date.now(), title:t, cat:c, body:b}); setBOS(arr);
+  document.getElementById("bosTitle").value="";
+  document.getElementById("bosBody").value="";
+  toast("Entry added ✓");
+});
+(function(){
+  const btn=document.getElementById("bosClearAll"); if(!btn) return;
+  let pending=false, timer=null, original=btn.textContent;
+  btn.addEventListener("click", ()=>{
+    if(!pending){
+      pending=true; btn.textContent="Click again to confirm";
+      clearTimeout(timer);
+      timer=setTimeout(()=>{ pending=false; btn.textContent=original; },3000);
+    }else{
+      pending=false; btn.textContent=original;
+      setBOS([]); toast("Book of Shadows cleared ✓");
+    }
+  });
+})();
+renderBOS();
 
 // WITCHCRAFT — Moon Phase (approximation)
 function moonPhase(date=new Date()){
@@ -735,9 +802,24 @@ document.getElementById("tarotSave")?.addEventListener("click", ()=>{
   setTarotLog(log);
   alert("Saved today’s card.");
 });
-document.getElementById("tarotClear")?.addEventListener("click", ()=>{
-  if(confirm("Clear tarot log history?")) setTarotLog([]);
-});
+const tarotClearBtn = document.getElementById("tarotClear");
+if(tarotClearBtn){
+  let pending = false, timer = null, original = tarotClearBtn.textContent;
+  tarotClearBtn.addEventListener("click", ()=>{
+    if(!pending){
+      pending = true;
+      tarotClearBtn.textContent = "Click again to confirm";
+      clearTimeout(timer);
+      timer = setTimeout(()=>{ pending=false; tarotClearBtn.textContent = original; }, 3000);
+    }else{
+      pending = false;
+      tarotClearBtn.textContent = original;
+      setTarotLog([]);
+      toast("Tarot log cleared ✓");
+    }
+  });
+}
+
 renderTarotLog();
 
 // WITCHCRAFT — Sabbats (Northern Hemisphere, fixed dates)
